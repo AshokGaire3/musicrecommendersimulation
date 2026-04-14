@@ -9,6 +9,14 @@ Example: **VibeFinder 1.0**
 
 ---
 
+## 1b. Goal / Task
+
+What is this system trying to predict or suggest?
+
+This system tries to predict which songs from an 18-song catalog a specific user would most enjoy, based on how well each song's features match the user's stated preferences. The task is ranking, not just filtering — every song in the catalog gets a numeric score, and the top 5 are returned in order from most to least relevant, along with a plain-language explanation for each result.
+
+---
+
 ## 2. Intended Use  
 
 Describe what your recommender is designed to do and who it is for. 
@@ -20,6 +28,13 @@ Prompts:
 - Is this for real users or classroom exploration  
 
 This system suggests up to 5 songs from an 18-song catalog based on a user's stated genre, mood, energy level, and acoustic preference. It is built for classroom exploration — not real users — to demonstrate how a content-based recommender turns raw data into a ranked list. It assumes the user can fully describe their taste in four fields and does not learn from listening history or adapt over time.
+
+**Non-Intended Use:**
+
+- This system is NOT meant to be used as a real music recommender for actual listeners — the catalog is too small and the scoring too simple
+- It should NOT be used to make decisions about which artists or genres deserve promotion or visibility
+- It is NOT designed to represent global or diverse musical taste — the dataset reflects a narrow Western, English-language perspective
+- It should NOT replace human curation or be treated as ground truth for what music a person will enjoy
 
 ---
 
@@ -145,3 +160,23 @@ Prompts:
 - How this changed the way you think about music recommendation apps  
 
 Building this made me realize how much a small design choice — like making genre worth 2 points and mood worth 1 — can completely shape what a user sees. The Classical Rage experiment was genuinely surprising: a song with almost nothing in common with what the user asked for won just because it matched a single categorical field. That made me think differently about how Spotify or TikTok must work. They probably use dozens of signals weighted dynamically, not a fixed recipe. The filter bubble finding stuck with me most. The rock profile never once surfaced a jazz or soul song, even songs that matched well on energy and mood. In a real product used by millions of people, that kind of invisible narrowing would quietly shape what people think music even sounds like — and they would never know it was happening.
+
+---
+
+### Phase 5 Engineering Reflection
+
+**What was the biggest learning moment during this project?**
+
+The adversarial profile test was the clearest moment. I built the "Classical Rage" profile expecting odd results, but watching Winter Cathedral — a slow, quiet piece with energy 0.22 — rank #1 for someone who explicitly asked for intense, high-energy classical music made the problem concrete. It showed me that a scoring system does not understand context, it just counts points. The number came out "correct" by its own rules, but a human listener would immediately recognize the result as wrong. That gap between mathematically valid and actually useful is something I did not expect to see so clearly in such a simple system.
+
+**How did AI tools help you, and when did you need to double-check them?**
+
+AI tools helped me brainstorm adversarial profiles I would not have thought of on my own — things like "what happens when genre, mood, and energy all conflict with each other." They also helped me structure the algorithm recipe before writing code, so I had a plan before touching the functions. But I had to verify the actual math by hand. I ran manual score calculations for Storm Runner and Library Rain before trusting the implementation, and compared the results to the real function output to make sure they matched. If I had just assumed the code was correct without checking, a weight bug could have gone unnoticed.
+
+**What surprised you about how simple algorithms can still "feel" like recommendations?**
+
+The explanations made the system feel smarter than it actually is. When the terminal prints "matches your favorite genre (rock) | matches your preferred mood (intense) | energy score 0.97", it reads like the system understood something meaningful about the music. But underneath it is just three additions. The gap between "feels intelligent" and "is intelligent" is mostly about the language you wrap around the math. That made me realize how much of the "magic" in real recommendation apps is probably presentation and confidence, not necessarily deeper understanding.
+
+**What would you try next if you extended this project?**
+
+I would add two things. First, a feedback loop: track which recommendations a user skips or replays and adjust the weights over time based on real behavior rather than a fixed recipe. Second, I would make the genre weight dynamic based on how many songs exist in that genre — if a genre has only one song in the catalog, its weight should automatically decrease so it does not win by default. Both changes would make the system more honest about what it actually knows versus what it is guessing.
