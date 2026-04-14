@@ -109,6 +109,14 @@ This diagram matches the actual code path: `load_songs` feeds 18 dicts into a lo
 
 ---
 
+## CLI Output
+
+Running `python -m src.main` produces the following terminal output:
+
+![CLI terminal output showing top 5 recommendations](asset/main_sc.png)
+
+---
+
 ## Getting Started
 
 ### Setup
