@@ -38,18 +38,44 @@ class Recommender:
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
-        # TODO: Implement recommendation logic
-        return self.songs[:k]
+        """Return the top k songs ranked by weighted score against the user profile."""
+        def _score(song: Song) -> float:
+            score = 0.0
+            if song.genre == user.favorite_genre:
+                score += 2.0
+            if song.mood == user.favorite_mood:
+                score += 1.0
+            score += max(0.0, 1.0 - abs(song.energy - user.target_energy))
+            if user.likes_acoustic:
+                score += song.acousticness * 0.5
+            else:
+                score -= song.acousticness * 0.5
+            return score
+
+        return sorted(self.songs, key=_score, reverse=True)[:k]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
-        # TODO: Implement explanation logic
-        return "Explanation placeholder"
+        """Return a human-readable string explaining why this song was recommended."""
+        reasons = []
+        if song.genre == user.favorite_genre:
+            reasons.append(f"matches your favorite genre ({song.genre})")
+        if song.mood == user.favorite_mood:
+            reasons.append(f"matches your preferred mood ({song.mood})")
+        energy_diff = abs(song.energy - user.target_energy)
+        if energy_diff <= 0.1:
+            reasons.append(f"energy {song.energy:.2f} is very close to your target {user.target_energy:.2f}")
+        elif energy_diff <= 0.3:
+            reasons.append(f"energy {song.energy:.2f} is near your target {user.target_energy:.2f}")
+        if user.likes_acoustic and song.acousticness > 0.5:
+            reasons.append(f"acoustic style ({song.acousticness:.2f}) fits your taste")
+        elif not user.likes_acoustic and song.acousticness < 0.3:
+            reasons.append(f"non-acoustic style ({song.acousticness:.2f}) fits your preference")
+        if not reasons:
+            reasons.append("general match based on your profile")
+        return " | ".join(reasons)
 
 def load_songs(csv_path: str) -> List[Dict]:
-    """
-    Loads songs from a CSV file.
-    Required by src/main.py
-    """
+    """Read songs.csv and return a list of dicts with numeric fields cast to float/int."""
     import csv
     songs = []
     with open(csv_path, newline='', encoding='utf-8') as f:
@@ -67,20 +93,11 @@ def load_songs(csv_path: str) -> List[Dict]:
                 'danceability': float(row['danceability']),
                 'acousticness': float(row['acousticness']),
             })
-    print(f"Loaded {len(songs)} songs from {csv_path}")
+    print(f"Loaded songs: {len(songs)}")
     return songs
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """
-    Scores a single song against user preferences.
-    Required by recommend_songs() and src/main.py
-
-    Weights (verified against songs.csv distributions):
-      +2.0  genre match       — strongest signal, spread across 15 genres
-      +1.0  mood match        — secondary signal, spread across 14 moods
-      +0–1  energy proximity  — max(0, 1 - |song_energy - target_energy|)
-      ±0–0.5 acoustic pref   — acousticness * 0.5, added or subtracted
-    """
+    """Return (score, reasons) for one song using genre/mood/energy/acoustic weights."""
     score = 0.0
     reasons: List[str] = []
 
@@ -117,10 +134,12 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     return (score, reasons)
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-    """
-    # TODO: Implement scoring and ranking logic
-    # Expected return format: (song_dict, score, explanation)
-    return []
+    """Score every song, sort highest to lowest, and return the top k as (song, score, explanation) tuples."""
+    scored = []
+    for song in songs:
+        score, reasons = score_song(user_prefs, song)
+        explanation = " | ".join(reasons) if reasons else "no matching features"
+        scored.append((song, score, explanation))
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored[:k]
