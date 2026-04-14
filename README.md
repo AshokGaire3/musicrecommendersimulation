@@ -117,6 +117,27 @@ Running `python -m src.main` produces the following terminal output:
 
 ---
 
+## Stress Test: Diverse Profile Outputs
+
+Each profile below was run independently to observe how the recommender behaves across different listener types and edge cases.
+
+**Profile 1 — High-Energy Pop**
+![High-Energy Pop recommendations](asset/Profile1.png)
+
+**Profile 2 — Chill Lofi**
+![Chill Lofi recommendations](asset/Profile2.png)
+
+**Profile 3 — Deep Intense Rock**
+![Deep Intense Rock recommendations](asset/Profile3.png)
+
+**Profile 4 — Adversarial (Classical Rage)**
+![Adversarial Classical Rage recommendations](asset/Profile4.png)
+
+**Profile 5 — Edge Case (Loud & Acoustic)**
+![Edge Case Loud and Acoustic recommendations](asset/Profile5.png)
+
+---
+
 ## Getting Started
 
 ### Setup
