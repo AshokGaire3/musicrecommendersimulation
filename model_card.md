@@ -1,118 +1,70 @@
-# 🎧 Model Card: Music Recommender Simulation
+# Model Card: Music Recommender Simulation
 
-## 1. Model Name  
+## Model Name
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
-
-**VibeFinder 1.0**
+**MusicHealer 1.0**
 
 ---
 
-## 1b. Goal / Task
+## Goal / Task
 
-What is this system trying to predict or suggest?
-
-This system tries to predict which songs from an 18-song catalog a specific user would most enjoy, based on how well each song's features match the user's stated preferences. The task is ranking, not just filtering — every song in the catalog gets a numeric score, and the top 5 are returned in order from most to least relevant, along with a plain-language explanation for each result.
+This system ranks songs from an 18-song catalog based on how well each song's features match a user's stated preferences. Every song gets a numeric score and the top 5 are returned in order, each with a short plain-language explanation of why it appeared.
 
 ---
 
-## 2. Intended Use  
+## Intended Use
 
-Describe what your recommender is designed to do and who it is for. 
+This recommender suggests up to 5 songs based on a user's genre, mood, energy level, and acoustic preference. It's built for a classroom project, not real users — the catalog is too small and the scoring too simple for anything production-level. It assumes the user can describe their taste in a few fields and doesn't learn from listening behavior or adapt over time.
 
-Prompts:  
-
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
-
-This system suggests up to 5 songs from an 18-song catalog based on a user's stated genre, mood, energy level, and acoustic preference. It is built for classroom exploration — not real users — to demonstrate how a content-based recommender turns raw data into a ranked list. It assumes the user can fully describe their taste in four fields and does not learn from listening history or adapt over time.
-
-**Non-Intended Use:**
-
-- This system is NOT meant to be used as a real music recommender for actual listeners — the catalog is too small and the scoring too simple
-- It should NOT be used to make decisions about which artists or genres deserve promotion or visibility
-- It is NOT designed to represent global or diverse musical taste — the dataset reflects a narrow Western, English-language perspective
-- It should NOT replace human curation or be treated as ground truth for what music a person will enjoy
+It's not a tool for deciding which artists or genres deserve more visibility, and it doesn't represent global or diverse musical taste. If someone used it for real music discovery they'd quickly run into its limits.
 
 ---
 
-## 3. How the Model Works  
+## How the Model Works
 
-Explain your scoring approach in simple language.  
+The recommender compares what the user says they like against what each song actually is. There are up to nine signals, split into two groups.
 
-Prompts:  
+**Core signals:** Genre match earns the most points (flat bonus). Mood match earns half that. Energy uses a closeness formula — the closer a song's energy is to the user's target, the more it scores, down to zero if the gap is too large. Acoustic quality is a small bonus for users who like acoustic music, or a small penalty for those who don't.
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
+**Extended signals:** Popularity closeness (how close the song's chart score is to the user's target), release decade match, detailed mood match (e.g. "euphoric" is more specific than the broad "happy"), and an explicit-content hard filter that subtracts 10 points from any flagged song if the user has opted out.
 
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+Every song gets scored using all active signals, then the five highest become the recommendations.
 
-The recommender compares what the user says they like against what each song actually is, using four features. If a song matches the user's favorite genre, it earns 2 points. If it matches the preferred mood, it earns 1 more point. The energy score is a closeness calculation — a song at exactly the user's target energy earns a full extra point, and songs further away earn less. If the user likes acoustic music, songs with higher acoustic quality get a small bonus; if the user dislikes acoustic music, those same songs get a small penalty. Every song in the catalog gets scored this way, and the five highest-scoring songs become the recommendations. I added the acoustic preference bonus and penalty on top of the starter logic, and I kept genre as the strongest weight because it tends to be the clearest signal for what kind of music someone wants.
+**Scoring modes:** The weight of each signal can be shifted by picking a mode. `genre-first` makes genre worth four times a mood match. `mood-first` makes the detailed mood signal dominate. `energy-focused` triples the energy weight, which works well for workout playlists. `discovery` actually penalizes popular songs so lesser-known tracks come up higher.
 
----
-
-## 4. Data  
-
-Describe the dataset the model uses.  
-
-Prompts:  
-
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
-
-The catalog has 18 songs across 15 genres and 14 moods. Genres include rock, pop, lofi, metal, classical, jazz, funk, reggae, soul, country, indie pop, synthwave, ambient, hip hop, and electronic. Most genres have only one or two songs. No songs were added or removed from the starter CSV. The data reflects a Western, English-language taste and is missing entire regions of music — K-pop, Latin, Afrobeats, and regional folk traditions are completely absent. With only one song per genre in many cases, the catalog is too narrow to represent real listener diversity.
+**Diversity reranker:** After scoring, there's an optional second pass that picks songs one at a time and applies a penalty before each selection if the next-best song shares an artist or genre with something already chosen. The artist penalty is −1.5 per repeat and the genre penalty is −0.75 per extra appearance beyond the second. This keeps one artist or genre from filling all five slots.
 
 ---
 
-## 5. Strengths  
+## Data
 
-Where does your system seem to work well  
+The catalog has 18 songs across 15 genres and 14 moods: rock, pop, lofi, metal, classical, jazz, funk, reggae, soul, country, indie pop, synthwave, ambient, hip hop, and electronic. Most genres have only one or two songs.
 
-Prompts:  
+Five columns were added beyond the starter CSV: `popularity` (0–100 chart score), `release_decade` (2000s/2010s/2020s), `detailed_mood` (euphoric, nostalgic, aggressive, serene, melancholic, uplifting, romantic, dreamy, triumphant), `language` (english or instrumental), and `explicit` (0 or 1). No songs were added or removed.
 
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
-
-The system works best when the user's profile is internally consistent. The Chill Lofi profile (lofi + chill + low energy + likes acoustic) reliably surfaces Library Rain and Midnight Coding at #1 and #2 — exactly the expected result. The Deep Intense Rock profile correctly places Storm Runner first by a wide margin. For clear, single-genre listeners, the top result is almost always the song you would intuitively pick. The scoring is also fully transparent: every recommendation includes a plain-language breakdown of exactly how many points each feature contributed, which makes it easy to trace why any result appeared.
+The catalog is almost entirely Western and English-language. K-pop, Latin, Afrobeats, and most regional folk traditions aren't represented at all. That's a real gap.
 
 ---
 
-## 6. Limitations and Bias 
+## Strengths
 
-Where the system struggles or behaves unfairly. 
+The system works best when the user's profile is internally consistent. The Chill Lofi profile (lofi + chill + low energy + acoustic) reliably puts Library Rain and Midnight Coding at #1 and #2. Deep Intense Rock puts Storm Runner first by a wide margin. For single-genre listeners with a clear taste, the top result usually matches intuition.
 
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
-
-The genre weight (2.0 points) is strong enough to crown a poor match as the top recommendation simply because it is the only song in that genre. This was exposed by the "Classical Rage" adversarial profile: Winter Cathedral — a slow, contemplative song with energy 0.22 — ranked #1 for a user who wanted intense, high-energy classical music, because it was the only classical song in the catalog. The system also creates a filter bubble: for the rock profile, no jazz, soul, funk, or reggae songs ever appear in the top 5, even songs that closely match the user's energy and mood. A cross-genre listener whose taste does not fit neatly into one label will consistently get worse recommendations than someone with a narrow, well-represented preference. Additionally, with only one song per genre in many cases, the genre signal becomes an all-or-nothing bet rather than a meaningful measure of fit — it over-rewards rare genre matches and punishes users whose favorite genre is missing from the catalog entirely.
+The output is also fully transparent — every recommendation shows exactly how much each feature contributed, so you can trace why anything appeared.
 
 ---
 
-## 7. Evaluation  
+## Limitations and Bias
 
-How you checked whether the recommender behaved as expected. 
+The genre weight (2.0 points) is strong enough to make a bad match win just because it's the only song in that genre. The "Classical Rage" adversarial profile exposed this clearly: Winter Cathedral (energy 0.22, slow and contemplative) ranked #1 for a user who wanted intense, high-energy classical music. It won just because it was the only classical song in the catalog.
 
-Prompts:  
+The system also creates filter bubbles. For a rock listener, no jazz, soul, funk, or reggae songs ever appear in the top 5 — even songs that closely match their energy and mood. A listener whose taste crosses genre lines consistently gets worse recommendations than someone with a narrow, well-represented preference. With mostly one song per genre, the genre signal is basically all-or-nothing. It rewards rare matches too heavily and completely fails users whose genre isn't in the catalog at all.
 
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
+---
 
-No need for numeric metrics unless you created some.
+## Evaluation
 
-Five user profiles were tested:
+Five profiles were tested:
 
 | Profile | Genre | Mood | Energy | Acoustic |
 |---|---|---|---|---|
@@ -122,61 +74,45 @@ Five user profiles were tested:
 | Adversarial (Classical Rage) | classical | intense | 0.90 | True |
 | Edge Case (Loud & Acoustic) | folk | warm | 0.85 | True |
 
-**What matched intuition:** Chill Lofi produced Library Rain and Midnight Coding as #1 and #2. Deep Intense Rock placed Storm Runner first by a wide margin. These results felt exactly right.
+Chill Lofi and Deep Intense Rock both matched what I expected. For High-Energy Pop, Gym Hero (pop, but intense mood) ranked #2 even though the user wanted happy — the genre weight beat the mood mismatch. For Classical Rage, Winter Cathedral ranked #1 despite being the opposite of what the user wanted. For Loud & Acoustic, no folk songs exist so the results felt generic.
 
-**What was surprising:** For High-Energy Pop, Gym Hero (pop, intense) ranked #2 even though the user asked for happy mood — the genre weight outweighed the mood mismatch. For Classical Rage, Winter Cathedral ranked #1 despite being the opposite of what the user wanted in energy and mood. The system had no way to distinguish "wrong kind of classical." For Loud & Acoustic, no folk songs exist in the catalog so the results felt generic.
-
-**Experiment:** Doubling the energy weight and halving the genre weight caused Winter Cathedral to drop from #1 to #3 for the Classical Rage profile, while the well-matched profiles stayed the same. This confirmed that the default weights overfit to genre for unusual profiles.
+Doubling the energy weight and halving the genre weight caused Winter Cathedral to drop from #1 to #3 for Classical Rage, while the well-matched profiles stayed the same. That confirmed the default weights overfit to genre for unusual profiles.
 
 ---
 
-## 8. Future Work  
+## Future Work
 
-Ideas for how you would improve the model next.  
-
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
-
-- Expand the catalog to at least 5–10 songs per genre so genre matching is meaningful rather than a lottery
-- Add a diversity step that prevents the same artist from appearing more than once in the top K
-- Allow range-based energy preferences (e.g., "between 0.6 and 0.8") instead of a single point target
-- Add support for negative preferences (e.g., "I never want country") to avoid forced genre matches
-- Introduce a second pass that injects one "surprise" song from outside the user's genre to break filter bubbles
+- Expand the catalog to at least 5–10 songs per genre so genre matching is actually meaningful instead of a lottery
+- Allow range-based energy preferences (e.g., "between 0.6 and 0.8") instead of a single target point
+- Add support for negative preferences (e.g., "never country") to hard-exclude genres regardless of other scores
+- Make the genre weight dynamic based on catalog coverage — if only one song exists in a genre, its weight should drop automatically so it doesn't win by default
+- The diversity reranker is working but uses fixed penalty values — making those tunable per context (party playlist vs. study mix) would make it more flexible
+- Add a feedback loop that adjusts weights based on what a user actually skips or replays, rather than a fixed recipe
 
 ---
 
-## 9. Personal Reflection  
+## Personal Reflection
 
-A few sentences about your experience.  
+Building this made me realize how much a small weight decision shapes what a user sees. Choosing genre = 2.0 and mood = 1.0 is actually saying "what kind of music matters more than how it makes you feel." The Classical Rage experiment was the clearest moment — a song with almost nothing in common with what the user asked for ranked first just because it matched one categorical field. That made me think Spotify and TikTok must use dozens of signals weighted dynamically, not a fixed recipe like this.
 
-Prompts:  
-
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
-
-Building this made me realize how much a small design choice — like making genre worth 2 points and mood worth 1 — can completely shape what a user sees. The Classical Rage experiment was genuinely surprising: a song with almost nothing in common with what the user asked for won just because it matched a single categorical field. That made me think differently about how Spotify or TikTok must work. They probably use dozens of signals weighted dynamically, not a fixed recipe. The filter bubble finding stuck with me most. The rock profile never once surfaced a jazz or soul song, even songs that matched well on energy and mood. In a real product used by millions of people, that kind of invisible narrowing would quietly shape what people think music even sounds like — and they would never know it was happening.
+The filter bubble finding stuck with me most. The rock profile never surfaced a jazz or soul song, even ones that matched well on energy and mood. In a real product, that invisible narrowing would quietly shape what people think music even sounds like — and most users would never notice it was happening.
 
 ---
 
 ### Phase 5 Engineering Reflection
 
-**What was the biggest learning moment during this project?**
+**What was the biggest learning moment?**
 
-The adversarial profile test was the clearest moment. I built the "Classical Rage" profile expecting odd results, but watching Winter Cathedral — a slow, quiet piece with energy 0.22 — rank #1 for someone who explicitly asked for intense, high-energy classical music made the problem concrete. It showed me that a scoring system does not understand context, it just counts points. The number came out "correct" by its own rules, but a human listener would immediately recognize the result as wrong. That gap between mathematically valid and actually useful is something I did not expect to see so clearly in such a simple system.
+The adversarial profile test. I built "Classical Rage" expecting weird results, but seeing Winter Cathedral (energy 0.22, slow and quiet) rank first for someone who wanted intense, high-energy classical made it concrete. A scoring system doesn't understand context — it just counts points. The number was "correct" by its own rules, but any human listener would immediately know it was wrong. I didn't expect to see that gap so clearly in something this simple.
 
-**How did AI tools help you, and when did you need to double-check them?**
+**How did AI tools help, and when did you have to double-check?**
 
-AI tools helped me brainstorm adversarial profiles I would not have thought of on my own — things like "what happens when genre, mood, and energy all conflict with each other." They also helped me structure the algorithm recipe before writing code, so I had a plan before touching the functions. But I had to verify the actual math by hand. I ran manual score calculations for Storm Runner and Library Rain before trusting the implementation, and compared the results to the real function output to make sure they matched. If I had just assumed the code was correct without checking, a weight bug could have gone unnoticed.
+They helped me come up with adversarial profiles I wouldn't have thought of on my own — like "what happens when genre, mood, and energy all conflict." They also helped me structure the algorithm before touching code. But I still had to check the math by hand. I calculated scores manually for Storm Runner and Library Rain before trusting the implementation, then compared against the actual function output. If I'd assumed the code was right without checking, a weight bug could have gone unnoticed.
 
-**What surprised you about how simple algorithms can still "feel" like recommendations?**
+**What surprised you about how simple algorithms feel like recommendations?**
 
-The explanations made the system feel smarter than it actually is. When the terminal prints "matches your favorite genre (rock) | matches your preferred mood (intense) | energy score 0.97", it reads like the system understood something meaningful about the music. But underneath it is just three additions. The gap between "feels intelligent" and "is intelligent" is mostly about the language you wrap around the math. That made me realize how much of the "magic" in real recommendation apps is probably presentation and confidence, not necessarily deeper understanding.
+The explanations. When the terminal prints "matches your favorite genre (rock) | energy score 0.97" it reads like the system actually understood something. But it's three additions. The gap between "feels smart" and "is smart" is mostly just the language you wrap around the math. I think a lot of the magic in real apps is probably the same — presentation and confidence, not necessarily deeper understanding.
 
-**What would you try next if you extended this project?**
+**What would you try next?**
 
-I would add two things. First, a feedback loop: track which recommendations a user skips or replays and adjust the weights over time based on real behavior rather than a fixed recipe. Second, I would make the genre weight dynamic based on how many songs exist in that genre — if a genre has only one song in the catalog, its weight should automatically decrease so it does not win by default. Both changes would make the system more honest about what it actually knows versus what it is guessing.
+A feedback loop that adjusts weights based on what a user actually skips or replays. And a dynamic genre weight that shrinks automatically when a genre has fewer than three songs — so the system doesn't win by default just for being the only option in a category.
