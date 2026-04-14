@@ -74,10 +74,47 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores a single song against user preferences.
     Required by recommend_songs() and src/main.py
+
+    Weights (verified against songs.csv distributions):
+      +2.0  genre match       — strongest signal, spread across 15 genres
+      +1.0  mood match        — secondary signal, spread across 14 moods
+      +0–1  energy proximity  — max(0, 1 - |song_energy - target_energy|)
+      ±0–0.5 acoustic pref   — acousticness * 0.5, added or subtracted
     """
-    # TODO: Implement scoring logic using your Algorithm Recipe from Phase 2.
-    # Expected return format: (score, reasons)
-    return []
+    score = 0.0
+    reasons: List[str] = []
+
+    # Genre match: +2.0
+    if song['genre'] == user_prefs['favorite_genre']:
+        score += 2.0
+        reasons.append(f"matches your favorite genre ({song['genre']})")
+
+    # Mood match: +1.0
+    if song['mood'] == user_prefs['favorite_mood']:
+        score += 1.0
+        reasons.append(f"matches your preferred mood ({song['mood']})")
+
+    # Energy proximity: 0.0 – 1.0
+    energy_points = max(0.0, 1.0 - abs(song['energy'] - user_prefs['target_energy']))
+    score += energy_points
+    reasons.append(
+        f"energy score {energy_points:.2f} "
+        f"(song {song['energy']:.2f} vs target {user_prefs['target_energy']:.2f})"
+    )
+
+    # Acoustic preference bonus or penalty: ±0.0 – 0.5
+    if user_prefs['likes_acoustic']:
+        bonus = song['acousticness'] * 0.5
+        score += bonus
+        if bonus > 0.1:
+            reasons.append(f"acoustic quality {song['acousticness']:.2f} fits your taste (+{bonus:.2f})")
+    else:
+        penalty = song['acousticness'] * 0.5
+        score -= penalty
+        if penalty > 0.1:
+            reasons.append(f"low acousticness {song['acousticness']:.2f} fits your non-acoustic preference (-{penalty:.2f})")
+
+    return (score, reasons)
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
     """
