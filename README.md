@@ -181,6 +181,12 @@ Use this section to document the experiments you ran. For example:
 - What happened when you added tempo or valence to the score
 - How did your system behave for different types of users
 
+**Weight shift (genre halved, energy doubled):** For well-matched profiles like Chill Lofi and Deep Intense Rock the top 5 barely changed. For the adversarial Classical Rage profile, Winter Cathedral dropped from #1 to #3 — replaced by Storm Runner and Gym Hero which matched on mood and energy. This confirmed the default weights overfit to genre for rare profiles.
+
+**Profile diversity test:** Ran 5 profiles including two adversarial edge cases. The Loud & Acoustic edge case (folk + high energy + acoustic) returned generic results because no folk songs exist in the catalog. The system silently substituted the nearest acoustic songs rather than flagging the gap.
+
+**Manual score verification:** Calculated scores by hand for Storm Runner (3.92) and Library Rain (0.04) before writing the implementation, then confirmed the function output matched — this caught a potential logic error early.
+
 ---
 
 ## Limitations and Risks
@@ -195,6 +201,12 @@ Examples:
 
 You will go deeper on this in your model card.
 
+- Works only on an 18-song catalog — most genres have just one song, making genre matching an all-or-nothing bet
+- The genre weight (2.0) is strong enough to surface the wrong song from the right genre, as proven by the Classical Rage adversarial test
+- Creates filter bubbles: a rock listener never sees jazz or soul songs, even songs that match well on energy and mood
+- Does not understand lyrics, cultural context, or listening history — only the four features it was given
+- Missing entire regions of global music (K-pop, Latin, Afrobeats) — the catalog reflects a narrow Western taste
+
 ---
 
 ## Reflection
@@ -207,6 +219,10 @@ Write 1 to 2 paragraphs here about what you learned:
 
 - about how recommenders turn data into predictions
 - about where bias or unfairness could show up in systems like this
+
+Building this system taught me that a recommender is never just math — it is a set of values baked into numbers. Choosing genre = 2.0 and mood = 1.0 is a design decision that says "what kind of music matters more than how it makes you feel." What surprised me most is how much the plain-language explanations made the system feel intelligent, even though the logic underneath is just three additions. A user reading "matches your favorite genre | energy score 0.97" might trust that result far more than they should.
+
+The bias finding is what stuck with me. The rock profile never once surfaced a jazz, soul, or reggae song — not because those songs were bad matches, but because the scoring formula had no way to value cross-genre similarity. In a real product used by millions of people, that kind of invisible narrowing would quietly shape what people think music sounds like, and most users would never know it was happening. That is what makes filter bubbles dangerous: they do not feel like a limitation, they just feel like good recommendations.
 
 
 
